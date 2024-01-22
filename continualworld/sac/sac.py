@@ -544,6 +544,7 @@ class SAC:
             if current_task_idx != getattr(self.env, "cur_seq_idx", -1):
                 current_task_timestep = 0
                 current_task_idx = getattr(self.env, "cur_seq_idx")
+                # reset the components such as the replay buffer for the new task
                 self._handle_task_change(current_task_idx)
 
             # Until start_steps have elapsed, randomly sample actions
@@ -552,7 +553,7 @@ class SAC:
             if current_task_timestep > self.start_steps or (
                 self.agent_policy_exploration and current_task_idx > 0
             ):
-                action = self.get_action(tf.convert_to_tensor(obs))
+                action = self.get_action(tf.convert_to_tensor(obs)) # the head selection will depend on the one-hot task id in the obs
             else:
                 action = self.env.action_space.sample()
 

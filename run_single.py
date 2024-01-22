@@ -57,6 +57,7 @@ if __name__ == "__main__":
     args = vars(single_parse_args())
     args["task"] = get_task_name(args["task"])
     logger = EpochLogger(args["logger_output"], config=args, group_id=args["group_id"])
+    print(args["group_id"])
     del args["group_id"]
     del args["logger_output"]
     main(logger, **args)

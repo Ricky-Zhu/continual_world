@@ -40,9 +40,9 @@ def main(args: argparse.Namespace) -> None:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--cl_logs", type=str)
+    parser.add_argument("--cl_logs", type=str, default='logs/3_task_cl')
     parser.add_argument("--mtl_logs", type=str)
-    parser.add_argument("--baseline_logs", type=str)
+    parser.add_argument("--baseline_logs", type=str, default='logs/baselines')
     parser.add_argument(
         "--use_ci",
         type=str2bool,
@@ -56,4 +56,7 @@ def parse_args() -> argparse.Namespace:
 
 if __name__ == "__main__":
     args = parse_args()
+    args.cl_logs = 'logs/CW3_2'
+    args.baseline_logs = 'logs/single'
+    args.mtl_logs = 'logs/mt'
     main(args)

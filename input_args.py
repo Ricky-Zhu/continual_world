@@ -19,7 +19,6 @@ def cl_parse_args(args=None):
     task_group.add_argument(
         "--task_list",
         nargs="+",
-        default=None,
         help="List of tasks you want to run, by name or by the MetaWorld index",
     )
     parser.add_argument(
@@ -36,7 +35,7 @@ def cl_parse_args(args=None):
         default="default_group",
         help="Group ID, for grouping logs from different experiments into common directory",
     )
-    parser.add_argument("--seed", type=int, help="Seed for randomness")
+    parser.add_argument("--seed", type=int, default=0,help="Seed for randomness")
     parser.add_argument(
         "--steps_per_task", type=sci2int, default=int(1e6), help="Numer of steps per task"
     )
