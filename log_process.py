@@ -19,5 +19,5 @@ def remove_incomplete_trials(path):
             shutil.rmtree(trial)
 
 
-path = './logs/mt'
+path = '/home/ruiqi/projects/continual_world/scripts/logs/CW3_1'
 remove_incomplete_trials(path)

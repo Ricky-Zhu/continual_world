@@ -196,12 +196,12 @@ class Logger:
         keystr = "%" + "%d" % max_key_len
         fmt = "| " + keystr + "s | %15s |"
         n_slashes = 22 + max_key_len
-        print("-" * n_slashes)
+        # print("-" * n_slashes)
         step = self.log_current_row.get("total_env_steps")
         for key in self.log_headers:
             val = self.log_current_row.get(key, "")
-            valstr = "%8.3g" % val if hasattr(val, "__float__") else val
-            print(fmt % (key, valstr))
+            # valstr = "%8.3g" % val if hasattr(val, "__float__") else val
+            # print(fmt % (key, valstr))
             vals.append(val)
 
             # Log to Neptune
@@ -217,7 +217,7 @@ class Logger:
             if "tensorboard" in self.logger_output:
                 tf.summary.scalar(key, data=val, step=step)
 
-        print("-" * n_slashes, flush=True)
+        # print("-" * n_slashes, flush=True)
         if self.output_file is not None:
             if self.first_row:
                 self.output_file.write("\t".join(self.log_headers) + "\n")

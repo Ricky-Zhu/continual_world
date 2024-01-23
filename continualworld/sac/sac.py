@@ -14,41 +14,43 @@ from continualworld.sac.replay_buffers import ReplayBuffer, ReservoirReplayBuffe
 from continualworld.sac.utils.logx import EpochLogger
 from continualworld.utils.enums import BufferType
 from continualworld.utils.utils import reset_optimizer, reset_weights, set_seed
+from tqdm import tqdm
 
 
 class SAC:
     def __init__(
-        self,
-        env: gym.Env,
-        test_envs: List[gym.Env],
-        logger: EpochLogger,
-        actor_cl: type = models.MlpActor,
-        actor_kwargs: Dict = None,
-        critic_cl: type = models.MlpCritic,
-        critic_kwargs: Dict = None,
-        seed: int = 0,
-        steps: int = 1_000_000,
-        log_every: int = 20_000,
-        replay_size: int = 1_000_000,
-        gamma: float = 0.99,
-        polyak: float = 0.995,
-        lr: float = 1e-3,
-        alpha: Union[float, str] = "auto",
-        batch_size: int = 128,
-        start_steps: int = 10_000,
-        update_after: int = 1000,
-        update_every: int = 50,
-        num_test_eps_stochastic: int = 10,
-        num_test_eps_deterministic: int = 1,
-        max_episode_len: int = 200,
-        save_freq_epochs: int = 100,
-        reset_buffer_on_task_change: bool = True,
-        buffer_type: BufferType = BufferType.FIFO,
-        reset_optimizer_on_task_change: bool = False,
-        reset_critic_on_task_change: bool = False,
-        clipnorm: float = None,
-        target_output_std: float = None,
-        agent_policy_exploration: bool = False,
+            self,
+            env: gym.Env,
+            test_envs: List[gym.Env],
+            logger: EpochLogger,
+            actor_cl: type = models.MlpActor,
+            actor_kwargs: Dict = None,
+            critic_cl: type = models.MlpCritic,
+            critic_kwargs: Dict = None,
+            seed: int = 0,
+            steps: int = 1_000_000,
+            log_every: int = 20_000,
+            replay_size: int = 1_000_000,
+            gamma: float = 0.99,
+            polyak: float = 0.995,
+            lr: float = 1e-3,
+            alpha: Union[float, str] = "auto",
+            batch_size: int = 128,
+            start_steps: int = 10_000,
+            update_after: int = 1000,
+            update_every: int = 50,
+            num_test_eps_stochastic: int = 10,
+            num_test_eps_deterministic: int = 1,
+            max_episode_len: int = 200,
+            save_freq_epochs: int = 100,
+            reset_buffer_on_task_change: bool = True,
+            buffer_type: BufferType = BufferType.FIFO,
+            reset_optimizer_on_task_change: bool = False,
+            reset_critic_on_task_change: bool = False,
+            clipnorm: float = None,
+            target_output_std: float = None,
+            agent_policy_exploration: bool = False,
+
     ):
         """A class for SAC training, for either single task, continual learning or multi-task learning.
         After the instance is created, use run() function to actually run the training.
@@ -176,9 +178,9 @@ class SAC:
 
         self.critic_variables = self.critic1.trainable_variables + self.critic2.trainable_variables
         self.all_common_variables = (
-            self.actor.common_variables
-            + self.critic1.common_variables
-            + self.critic2.common_variables
+                self.actor.common_variables
+                + self.critic1.common_variables
+                + self.critic2.common_variables
         )
 
         self.optimizer = tf.keras.optimizers.Adam(learning_rate=lr)
@@ -197,17 +199,17 @@ class SAC:
             else:
                 target_1d_entropy = np.log(target_output_std * math.sqrt(2 * math.pi * math.e))
                 self.target_entropy = (
-                    np.prod(env.action_space.shape).astype(np.float32) * target_1d_entropy
+                        np.prod(env.action_space.shape).astype(np.float32) * target_1d_entropy
                 )
 
     def adjust_gradients(
-        self,
-        actor_gradients: List[tf.Tensor],
-        critic_gradients: List[tf.Tensor],
-        alpha_gradient: List[tf.Tensor],
-        current_task_idx: int,
-        metrics: dict,
-        episodic_batch: Dict[str, tf.Tensor] = None,
+            self,
+            actor_gradients: List[tf.Tensor],
+            critic_gradients: List[tf.Tensor],
+            alpha_gradient: List[tf.Tensor],
+            current_task_idx: int,
+            metrics: dict,
+            episodic_batch: Dict[str, tf.Tensor] = None,
     ) -> Tuple[List[tf.Tensor], List[tf.Tensor], List[tf.Tensor]]:
         return actor_gradients, critic_gradients, alpha_gradient
 
@@ -230,7 +232,7 @@ class SAC:
         return None
 
     def get_log_alpha(self, obs: tf.Tensor) -> tf.Tensor:
-        return tf.squeeze(tf.linalg.matmul(obs[:, -self.num_tasks :], self.all_log_alpha))
+        return tf.squeeze(tf.linalg.matmul(obs[:, -self.num_tasks:], self.all_log_alpha))
 
     @tf.function
     def get_action(self, o: tf.Tensor, deterministic: tf.Tensor = tf.constant(False)) -> tf.Tensor:
@@ -241,16 +243,16 @@ class SAC:
             return pi[0]
 
     def get_action_test(
-        self, o: tf.Tensor, deterministic: tf.Tensor = tf.constant(False)
+            self, o: tf.Tensor, deterministic: tf.Tensor = tf.constant(False)
     ) -> tf.Tensor:
         return self.get_action(o, deterministic)
 
     def get_learn_on_batch(self, current_task_idx: int) -> Callable:
         @tf.function
         def learn_on_batch(
-            seq_idx: tf.Tensor,
-            batch: Dict[str, tf.Tensor],
-            episodic_batch: Dict[str, tf.Tensor] = None,
+                seq_idx: tf.Tensor,
+                batch: Dict[str, tf.Tensor],
+                episodic_batch: Dict[str, tf.Tensor] = None,
         ) -> Dict:
             gradients, metrics = self.get_gradients(seq_idx, **batch)
             # Warning: we refer here to the int task_idx in the parent function, not
@@ -276,13 +278,13 @@ class SAC:
         return learn_on_batch
 
     def get_gradients(
-        self,
-        seq_idx: tf.Tensor,
-        obs: tf.Tensor,
-        next_obs: tf.Tensor,
-        actions: tf.Tensor,
-        rewards: tf.Tensor,
-        done: tf.Tensor,
+            self,
+            seq_idx: tf.Tensor,
+            obs: tf.Tensor,
+            next_obs: tf.Tensor,
+            actions: tf.Tensor,
+            rewards: tf.Tensor,
+            done: tf.Tensor,
     ) -> Tuple[Tuple[List[tf.Tensor], List[tf.Tensor], List[tf.Tensor]], Dict]:
         with tf.GradientTape(persistent=True) as g:
             if self.auto_alpha:
@@ -318,8 +320,8 @@ class SAC:
                         + self.gamma
                         * (1 - done)
                         * (
-                            self.critic1.unnormalize(min_target_q, next_obs)
-                            - tf.math.exp(log_alpha) * logp_pi_next
+                                self.critic1.unnormalize(min_target_q, next_obs)
+                                - tf.math.exp(log_alpha) * logp_pi_next
                         ),
                         obs,
                     )
@@ -376,10 +378,10 @@ class SAC:
         return gradients, metrics
 
     def apply_update(
-        self,
-        actor_gradients: List[tf.Tensor],
-        critic_gradients: List[tf.Tensor],
-        alpha_gradient: List[tf.Tensor],
+            self,
+            actor_gradients: List[tf.Tensor],
+            critic_gradients: List[tf.Tensor],
+            alpha_gradient: List[tf.Tensor],
     ) -> None:
         self.optimizer.apply_gradients(zip(actor_gradients, self.actor.trainable_variables))
 
@@ -390,11 +392,11 @@ class SAC:
 
         # Polyak averaging for target variables
         for v, target_v in zip(
-            self.critic1.trainable_variables, self.target_critic1.trainable_variables
+                self.critic1.trainable_variables, self.target_critic1.trainable_variables
         ):
             target_v.assign(self.polyak * target_v + (1 - self.polyak) * v)
         for v, target_v in zip(
-            self.critic2.trainable_variables, self.target_critic2.trainable_variables
+                self.critic2.trainable_variables, self.target_critic2.trainable_variables
         ):
             target_v.assign(self.polyak * target_v + (1 - self.polyak) * v)
 
@@ -427,6 +429,32 @@ class SAC:
             self.logger.log_tabular(key_prefix + "success", np.mean(env_success))
         key = f"test/{mode}/average_success"
         self.logger.log_tabular(key, np.mean(avg_success))
+
+    def test_agent_wo_log(self, deterministic, num_episodes) -> None:
+        avg_success = []
+        mode = "deterministic" if deterministic else "stochastic"
+        for seq_idx, test_env in enumerate(self.test_envs):
+            key_prefix = f"test/{mode}/{seq_idx}/{test_env.name}/"
+
+            self.on_test_start(seq_idx)
+
+            for j in range(num_episodes):
+                obs, done, episode_return, episode_len = test_env.reset(), False, 0, 0
+                while not (done or (episode_len == self.max_episode_len)):
+                    obs, reward, done, _ = test_env.step(
+                        self.get_action_test(tf.convert_to_tensor(obs), tf.constant(deterministic))
+                    )
+                    episode_return += reward
+                    episode_len += 1
+
+            self.on_test_end(seq_idx)
+
+            env_success = test_env.pop_successes()
+            avg_success += env_success
+            print('test env:{}, mode:{}, avg success rate:{}'.format(test_env.name, mode, np.mean(env_success)))
+
+        key = f"test/{mode}/average_success"
+        print('all test envs avg success: {}'.format(np.mean(avg_success)))
 
     def _log_after_update(self, results):
         self.logger.store(
@@ -524,9 +552,9 @@ class SAC:
         # to notice this change.
         self.learn_on_batch = self.get_learn_on_batch(current_task_idx)
         self.all_common_variables = (
-            self.actor.common_variables
-            + self.critic1.common_variables
-            + self.critic2.common_variables
+                self.actor.common_variables
+                + self.critic1.common_variables
+                + self.critic2.common_variables
         )
 
     def run(self):
@@ -539,21 +567,27 @@ class SAC:
         current_task_idx = -1
         self.learn_on_batch = self.get_learn_on_batch(current_task_idx)
 
-        for global_timestep in range(self.steps):
+        for global_timestep in range(self.steps + 1):
             # On task change
             if current_task_idx != getattr(self.env, "cur_seq_idx", -1):
                 current_task_timestep = 0
                 current_task_idx = getattr(self.env, "cur_seq_idx")
                 # reset the components such as the replay buffer for the new task
                 self._handle_task_change(current_task_idx)
+                # evaluate at each task change
+                print('at the end of task {} training'.format(current_task_idx - 1))
+                self.test_agent_wo_log(deterministic=False, num_episodes=self.num_test_eps_stochastic)
+                self.test_agent_wo_log(deterministic=True, num_episodes=self.num_test_eps_deterministic)
+                # self.logger.dump_tabular()
 
             # Until start_steps have elapsed, randomly sample actions
             # from a uniform distribution for better exploration. Afterwards,
             # use the learned policy.
             if current_task_timestep > self.start_steps or (
-                self.agent_policy_exploration and current_task_idx > 0
+                    self.agent_policy_exploration and current_task_idx > 0
             ):
-                action = self.get_action(tf.convert_to_tensor(obs)) # the head selection will depend on the one-hot task id in the obs
+                action = self.get_action(
+                    tf.convert_to_tensor(obs))  # the head selection will depend on the one-hot task id in the obs
             else:
                 action = self.env.action_space.sample()
 
@@ -585,8 +619,8 @@ class SAC:
 
             # Update handling
             if (
-                current_task_timestep >= self.update_after
-                and current_task_timestep % self.update_every == 0
+                    current_task_timestep >= self.update_after
+                    and current_task_timestep % self.update_every == 0
             ):
 
                 for j in range(self.update_every):
@@ -600,8 +634,8 @@ class SAC:
                     self._log_after_update(results)
 
             if (
-                self.env.name == "ContinualLearningEnv"
-                and current_task_timestep + 1 == self.env.steps_per_env
+                    self.env.name == "ContinualLearningEnv"
+                    and current_task_timestep + 1 == self.env.steps_per_env
             ):
                 self.on_task_end(current_task_idx)
 

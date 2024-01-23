@@ -13,7 +13,7 @@ def cl_parse_args(args=None):
         "--tasks",
         type=str,
         choices=TASK_SEQS.keys(),
-        default=None,
+        default='CW3_1',
         help="Name of the sequence you want to run",
     )
     task_group.add_argument(
@@ -110,7 +110,7 @@ def cl_parse_args(args=None):
     parser.add_argument(
         "--cl_method",
         type=str,
-        choices=[None, "l2", "ewc", "mas", "vcl", "packnet", "agem"],
+        # choices=[None, "l2", "ewc", "mas", "vcl", "packnet", "agem"],
         default=None,
         help="If None, finetuning method will be used. If one of 'l2', 'ewc', 'mas', 'vcl',"
         "'packnet', 'agem', respective method will be used.",

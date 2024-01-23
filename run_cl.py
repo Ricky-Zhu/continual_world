@@ -135,7 +135,11 @@ def main(
 
 if __name__ == "__main__":
     args = vars(cl_parse_args())
+    if args['cl_method'] == "None":
+        args['cl_method'] = None
     logger = EpochLogger(args["logger_output"], config=args, group_id=args["group_id"])
     del args["group_id"]
     del args["logger_output"]
+    # args['steps_per_task'] = 2000
+    # args['log_every'] = 250
     main(logger, **args)
