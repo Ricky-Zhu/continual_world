@@ -37,9 +37,9 @@ class PackNet_SAC(SAC):
                 # If there are more heads, do not touch them with PackNet.
                 variables_to_manage = model.core.trainable_variables
             for v in variables_to_manage:
-                self.managed_variable_refs.add(v.ref())
+                self.managed_variable_refs.add(v.ref())  # contain all the parameters
                 if "kernel" in v.name:
-                    self.owner[v.ref()] = tf.Variable(
+                    self.owner[v.ref()] = tf.Variable(       # contain only the kernel params but not the bias and the notmalization such as
                         tf.zeros_like(v, dtype=tf.int32), trainable=False
                     )
                     self.saved_variables[v.ref()] = tf.Variable(tf.zeros_like(v), trainable=False)
@@ -63,7 +63,7 @@ class PackNet_SAC(SAC):
             )
         return actor_gradients, critic_gradients, alpha_gradient
 
-    def on_test_start(self, seq_idx: tf.Tensor) -> None:
+    def on_test_start(self, seq_idx: tf.Tensor) -> None:  # set the mask
         self._set_view(seq_idx)
 
     def on_test_end(self, seq_idx: tf.Tensor) -> None:
@@ -128,7 +128,7 @@ class PackNet_SAC(SAC):
             vals = tf.sort(tf.abs(vals))
             threshold_index = tf.cast(tf.cast(tf.shape(vals)[0], tf.float32) * prune_perc, tf.int32)
             threshold = vals[threshold_index]
-            keep_mask = (tf.abs(v) > threshold) | (owner != seq_idx)
+            keep_mask = (tf.abs(v) > threshold) | (owner != seq_idx)  # only keeps large values
             v.assign(v * tf.cast(keep_mask, tf.float32))
             owner.assign(
                 owner * tf.cast(keep_mask, tf.int32) + (seq_idx + 1) * tf.cast(~keep_mask, tf.int32)

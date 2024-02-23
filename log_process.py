@@ -13,11 +13,11 @@ def remove_incomplete_trials(path):
         print(trial)
         try:
             data = pd.read_csv(progress_dir, sep='\t')
-            if int(max(data['total_env_steps'])) < 1000000:
+            if int(max(data['total_env_steps'])) < 900000:
                 shutil.rmtree(trial)
         except:
             shutil.rmtree(trial)
 
 
-path = '/home/ruiqi/projects/continual_world/scripts/logs/CW3_1'
+path = '/home/ruiqi/projects/continual_world/scripts/logs/2_tasks'
 remove_incomplete_trials(path)

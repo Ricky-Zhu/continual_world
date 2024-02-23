@@ -7,7 +7,9 @@ from typing import Callable, Dict, List, Optional, Tuple, Union
 import gym
 import numpy as np
 import tensorflow as tf
-
+physical_devices = tf.config.list_physical_devices('GPU')
+for device in physical_devices:
+    tf.config.experimental.set_memory_growth(device, True)
 from continualworld.sac import models
 from continualworld.sac.models import PopArtMlpCritic
 from continualworld.sac.replay_buffers import ReplayBuffer, ReservoirReplayBuffer
@@ -36,7 +38,7 @@ class SAC:
             lr: float = 1e-3,
             alpha: Union[float, str] = "auto",
             batch_size: int = 128,
-            start_steps: int = 10_000,
+            start_steps: int = 500,
             update_after: int = 1000,
             update_every: int = 50,
             num_test_eps_stochastic: int = 10,
@@ -424,7 +426,7 @@ class SAC:
 
             self.logger.log_tabular(key_prefix + "return", with_min_and_max=True)
             self.logger.log_tabular(key_prefix + "ep_length", average_only=True)
-            env_success = test_env.pop_successes()
+            env_success = test_env.pop_successes() # a list of whether success len=episode num
             avg_success += env_success
             self.logger.log_tabular(key_prefix + "success", np.mean(env_success))
         key = f"test/{mode}/average_success"

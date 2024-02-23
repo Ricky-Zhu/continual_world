@@ -79,6 +79,36 @@ def get_single_env(
     env.num_envs = 1
     return env
 
+def get_single_meta_world_env(
+    task: Union[int, str],
+    randomization: str = "random_init_all",
+) -> gym.Env:
+    """Returns a single task environment.
+
+    Appends one-hot embedding to the observation, so that the model that operates on many envs
+    can differentiate between them.
+
+    Args:
+      task: task name or MT50 number
+      one_hot_idx: one-hot identifier (indicates order among different tasks that we consider)
+      one_hot_len: length of the one-hot encoding, number of tasks that we consider
+      randomization: randomization kind, one of 'deterministic', 'random_init_all',
+                     'random_init_fixed20', 'random_init_small_box'.
+
+    Returns:
+      gym.Env: single-task environment
+    """
+    task_name = get_task_name(task)
+    env = MT50.train_classes[task_name]()
+    temp_task = get_subtasks(task_name)
+    env = RandomizationWrapper(env, temp_task, randomization)
+    # Currently TimeLimit is needed since SuccessCounter looks at dones.
+    env = TimeLimit(env, META_WORLD_TIME_HORIZON)
+    env = SuccessCounter(env)
+    env.name = task_name
+    env.num_envs = 1
+    return env
+
 
 def assert_equal_excluding_goal_dimensions(os1: gym.spaces.Box, os2: gym.spaces.Box) -> None:
     assert np.array_equal(os1.low[:9], os2.low[:9])

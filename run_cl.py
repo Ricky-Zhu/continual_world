@@ -140,6 +140,12 @@ if __name__ == "__main__":
     logger = EpochLogger(args["logger_output"], config=args, group_id=args["group_id"])
     del args["group_id"]
     del args["logger_output"]
-    # args['steps_per_task'] = 2000
-    # args['log_every'] = 250
+
+    args['cl_method']='packnet'
+    args['tasks']='CW3_1'
+    args['packnet_retrain_steps']=100000
+    args['clipnorm']=2e-05
+    # args['task_list']=['push-v1', 'hammer-v1']
+    args['steps_per_task'] = 2000
+    args['log_every'] = 250
     main(logger, **args)

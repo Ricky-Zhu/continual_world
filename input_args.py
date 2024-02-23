@@ -13,7 +13,7 @@ def cl_parse_args(args=None):
         "--tasks",
         type=str,
         choices=TASK_SEQS.keys(),
-        default='CW3_1',
+        default=None,
         help="Name of the sequence you want to run",
     )
     task_group.add_argument(
